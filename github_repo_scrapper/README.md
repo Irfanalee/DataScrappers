@@ -4,10 +4,22 @@ Collects high-quality code review comments from GitHub PRs for fine-tuning an LL
 
 ## Setup
 
+1. Install dependencies:
 ```bash
 pip install -r requirements.txt
-export GITHUB_TOKEN="your_github_token_here"
 ```
+
+2. Create a `.env` file in the project root directory:
+```bash
+cp .env.example .env
+```
+
+Or manually create `.env` with your GitHub token:
+```
+GITHUB_TOKEN=your_github_token_here
+```
+
+> **Note:** Get your GitHub token from [GitHub Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). You need `repo` scope to access private PR data.
 
 ## Run
 
@@ -19,6 +31,13 @@ python scraper.py
 
 - `data/<repo_name>.json` — Per-repo data
 - `data/all_examples.json` — Combined dataset
+
+## Configuration
+
+The scraper uses a `.env` file to load sensitive data like your GitHub token. The `.env` file is automatically ignored by Git (see `.gitignore`), so your token stays secure.
+
+**Environment Variables:**
+- `GITHUB_TOKEN` (required) — Personal access token for GitHub API authentication
 
 ## What It Does
 
