@@ -1,15 +1,15 @@
 {
   "repo": "tiangolo/sqlmodel",
-  "scraped_at": "2026-02-03T10:52:17.032090",
+  "scraped_at": "2026-02-03T12:54:51.403819",
   "stats": {
-    "total_comments": 57,
+    "total_comments": 69,
     "filtered": {
       "no_diff_hunk": 1,
       "too_long": 1,
-      "too_short": 16,
-      "not_python": 8
+      "too_short": 17,
+      "not_python": 10
     },
-    "kept": 31
+    "kept": 40
   },
   "examples": [
     {
@@ -414,6 +414,123 @@
       "user": "tiangolo",
       "created_at": "2024-06-13T17:54:13Z",
       "url": "https://github.com/fastapi/sqlmodel/pull/983#discussion_r1638667721"
+    },
+    {
+      "repo": "tiangolo/sqlmodel",
+      "pr_number": 440,
+      "file_path": "tests/test_pydantic/test_field.py",
+      "line": 34,
+      "side": "LEFT",
+      "diff_hunk": "@@ -22,16 +22,6 @@ class Model(SQLModel):\n         Model(dec=Decimal(\"420\"))\n \n \n-def test_unique_items():\n-    class Model(SQLModel):\n-        unique_strings: List[str] = Field(unique_items=True)\n-\n-    Model(unique_strings=[\"x\", \"y\"])\n-\n-    with pytest.raises(ValidationError):\n-        Model(unique_strings=[\"x\", \"y\", \"x\"])\n-\n-",
+      "comment": "why remove and not skipif, as pydantic v2 support is not present now? \r\n\r\nPlease note that if that means Pydantic v2 support in few days, I'm fine with it ;-)",
+      "comment_id": 1373314044,
+      "user": "MRigal",
+      "created_at": "2023-10-26T14:54:24Z",
+      "url": "https://github.com/fastapi/sqlmodel/pull/440#discussion_r1373314044"
+    },
+    {
+      "repo": "tiangolo/sqlmodel",
+      "pr_number": 440,
+      "file_path": "tests/test_pydantic/test_field.py",
+      "line": 34,
+      "side": "LEFT",
+      "diff_hunk": "@@ -22,16 +22,6 @@ class Model(SQLModel):\n         Model(dec=Decimal(\"420\"))\n \n \n-def test_unique_items():\n-    class Model(SQLModel):\n-        unique_strings: List[str] = Field(unique_items=True)\n-\n-    Model(unique_strings=[\"x\", \"y\"])\n-\n-    with pytest.raises(ValidationError):\n-        Model(unique_strings=[\"x\", \"y\", \"x\"])\n-\n-",
+      "comment": "Yep, the plan is to support SQLAlchemy 2.0 and Pydantic 2.0 as soon as possible. \ud83e\udd13 ",
+      "comment_id": 1375382830,
+      "user": "tiangolo",
+      "created_at": "2023-10-29T07:23:39Z",
+      "url": "https://github.com/fastapi/sqlmodel/pull/440#discussion_r1375382830"
+    },
+    {
+      "repo": "tiangolo/sqlmodel",
+      "pr_number": 79,
+      "file_path": "sqlmodel/main.py",
+      "line": 418,
+      "side": "RIGHT",
+      "diff_hunk": "@@ -414,7 +415,7 @@ def get_column_from_field(field: ModelField) -> Column:\n         return sa_column\n     sa_type = get_sqlachemy_type(field)\n     primary_key = getattr(field.field_info, \"primary_key\", False)\n-    nullable = not field.required\n+    nullable = not primary_key and _is_field_nullable(field)",
+      "comment": "Should this happen after the `if hasattr(field.field_info, \"nullable\"):` block below?\r\nDoes it make sense to allow people to still set `nullable=True` if it was set to `False` here because of the field being a primary key?",
+      "comment_id": 744855986,
+      "user": "highflyingaction",
+      "created_at": "2021-11-08T15:50:02Z",
+      "url": "https://github.com/fastapi/sqlmodel/pull/79#discussion_r744855986"
+    },
+    {
+      "repo": "tiangolo/sqlmodel",
+      "pr_number": 79,
+      "file_path": "sqlmodel/main.py",
+      "line": 418,
+      "side": "RIGHT",
+      "diff_hunk": "@@ -414,7 +415,7 @@ def get_column_from_field(field: ModelField) -> Column:\n         return sa_column\n     sa_type = get_sqlachemy_type(field)\n     primary_key = getattr(field.field_info, \"primary_key\", False)\n-    nullable = not field.required\n+    nullable = not primary_key and _is_field_nullable(field)",
+      "comment": "Sorry @highflyingaction, I completely missed your message. You are right, thanks for the help!",
+      "comment_id": 956689635,
+      "user": "van51",
+      "created_at": "2022-08-28T08:28:02Z",
+      "url": "https://github.com/fastapi/sqlmodel/pull/79#discussion_r956689635"
+    },
+    {
+      "repo": "tiangolo/sqlmodel",
+      "pr_number": 79,
+      "file_path": "sqlmodel/main.py",
+      "line": 418,
+      "side": "RIGHT",
+      "diff_hunk": "@@ -414,7 +415,7 @@ def get_column_from_field(field: ModelField) -> Column:\n         return sa_column\n     sa_type = get_sqlachemy_type(field)\n     primary_key = getattr(field.field_info, \"primary_key\", False)\n-    nullable = not field.required\n+    nullable = not primary_key and _is_field_nullable(field)",
+      "comment": "Hehe it's still not super clear and obvious how this should work, I moved it and then that caused https://github.com/tiangolo/sqlmodel/issues/420 :sweat_smile:\r\n\r\nAnyway, I'm on it. :nerd_face: ",
+      "comment_id": 958620831,
+      "user": "tiangolo",
+      "created_at": "2022-08-30T15:19:19Z",
+      "url": "https://github.com/fastapi/sqlmodel/pull/79#discussion_r958620831"
+    },
+    {
+      "repo": "tiangolo/sqlmodel",
+      "pr_number": 53,
+      "file_path": "sqlmodel/main.py",
+      "line": 208,
+      "side": "LEFT",
+      "diff_hunk": "@@ -199,14 +199,13 @@ def Relationship(\n     sa_relationship_args: Optional[Sequence[Any]] = None,\n     sa_relationship_kwargs: Optional[Mapping[str, Any]] = None,\n ) -> Any:\n-    relationship_info = RelationshipInfo(\n+    return RelationshipInfo(\n         back_populates=back_populates,\n         link_model=link_model,\n         sa_relationship=sa_relationship,\n         sa_relationship_args=sa_relationship_args,\n         sa_relationship_kwargs=sa_relationship_kwargs,\n     )\n-    return relationship_info",
+      "comment": "I actually like to keep these variables returned separated when they become useful for debugging, for running the code through the debugger, so I would prefer to keep this one.",
+      "comment_id": 956620111,
+      "user": "tiangolo",
+      "created_at": "2022-08-27T20:23:30Z",
+      "url": "https://github.com/fastapi/sqlmodel/pull/53#discussion_r956620111"
+    },
+    {
+      "repo": "tiangolo/sqlmodel",
+      "pr_number": 53,
+      "file_path": "sqlmodel/main.py",
+      "line": 534,
+      "side": "RIGHT",
+      "diff_hunk": "@@ -531,13 +529,9 @@ def from_orm(cls: Type[\"SQLModel\"], obj: Any, update: Dict[str, Any] = None):\n         if update is not None:\n             obj = {**obj, **update}\n         # End SQLModel support dict\n-        if not getattr(cls.__config__, \"table\", False):\n-            # If not table, normal Pydantic code\n-            m = cls.__new__(cls)\n-        else:\n-            # If table, create the new instance normally to make SQLAlchemy create\n-            # the _sa_instance_state attribute\n-            m = cls()\n+        m = cls.__new__(cls) if not getattr(cls.__config__, \"table\", False) else cls()\n+        # If table, create the new instance normally to make SQLAlchemy create\n+        # the _sa_instance_state attribute",
+      "comment": "In this case I prefer the old version, where the comment is right on top of the thing that it's doing.",
+      "comment_id": 956620240,
+      "user": "tiangolo",
+      "created_at": "2022-08-27T20:24:55Z",
+      "url": "https://github.com/fastapi/sqlmodel/pull/53#discussion_r956620240"
+    },
+    {
+      "repo": "tiangolo/sqlmodel",
+      "pr_number": 53,
+      "file_path": "sqlmodel/main.py",
+      "line": 607,
+      "side": "RIGHT",
+      "diff_hunk": "@@ -610,16 +604,7 @@ def _calculate_keys(  # type: ignore\n             return self.__fields__.keys()  # | self.__sqlmodel_relationships__.keys()\n \n         keys: AbstractSet[str]\n-        if exclude_unset:\n-            keys = self.__fields_set__.copy()\n-        else:\n-            # Original in Pydantic:\n-            # keys = self.__dict__.keys()\n-            # Updated to not return SQLAlchemy attributes\n-            # Do not include relationships as that would easily lead to infinite\n-            # recursion, or traversing the whole database\n-            keys = self.__fields__.keys()  # | self.__sqlmodel_relationships__.keys()\n-\n+        keys = self.__fields_set__.copy() if exclude_unset else self.__fields__.keys()",
+      "comment": "I prefer to keep the previous version with the comments explaining what's happening.",
+      "comment_id": 956620315,
+      "user": "tiangolo",
+      "created_at": "2022-08-27T20:26:06Z",
+      "url": "https://github.com/fastapi/sqlmodel/pull/53#discussion_r956620315"
+    },
+    {
+      "repo": "tiangolo/sqlmodel",
+      "pr_number": 53,
+      "file_path": "sqlmodel/sql/sqltypes.py",
+      "line": 57,
+      "side": "RIGHT",
+      "diff_hunk": "@@ -52,9 +52,6 @@ def process_bind_param(self, value, dialect):\n                 return f\"{value.int:x}\"\n \n     def process_result_value(self, value, dialect):\n-        if value is None:\n-            return value\n-        else:\n-            if not isinstance(value, uuid.UUID):\n-                value = uuid.UUID(value)\n-            return value\n+        if value is not None and not isinstance(value, uuid.UUID):\n+            value = uuid.UUID(value)\n+        return value",
+      "comment": "Here I find more readable the older version. :shrug: ",
+      "comment_id": 956620383,
+      "user": "tiangolo",
+      "created_at": "2022-08-27T20:26:50Z",
+      "url": "https://github.com/fastapi/sqlmodel/pull/53#discussion_r956620383"
     }
   ]
 }

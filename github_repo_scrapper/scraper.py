@@ -36,6 +36,12 @@ TARGET_REPOS = [
     "django/django",
     "pytorch/pytorch",
     "huggingface/transformers",
+    "scrapy/scrapy",
+    "celery/celery",
+    "psf/black",
+    "python/cpython",  # huge, lots of reviews
+    "apache/airflow",
+    "ansible/ansible"
 ]
 
 # Filtering thresholds
@@ -254,7 +260,7 @@ def main():
     
     for repo in TARGET_REPOS:
         try:
-            examples, stats = scrape_repo(repo, max_prs=300)
+            examples, stats = scrape_repo(repo, max_prs=1000)
             all_examples.extend(examples)
             all_stats["total_comments"] += stats["total_comments"]
             all_stats["kept"] += stats["kept"]

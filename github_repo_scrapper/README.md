@@ -45,6 +45,7 @@ The scraper uses a `.env` file to load sensitive data like your GitHub token. Th
 2. Extracts review comments with code context (diff hunks)
 3. Filters out low-quality comments (LGTM, too short, non-Python)
 4. Saves in JSON format ready for training
+5. Takes 3 - 4 hours 
 
 ## Target Repos
 
@@ -58,6 +59,12 @@ The scraper uses a `.env` file to load sensitive data like your GitHub token. Th
 - django/django
 - pytorch/pytorch
 - huggingface/transformers
+- scrapy/scrapy
+- celery/celery
+- psf/black
+- python/cpython (huge, lots of reviews)
+- apache/airflow
+- ansible/ansible
 
 ## Estimated Output
 
