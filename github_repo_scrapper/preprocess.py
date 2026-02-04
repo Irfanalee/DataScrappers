@@ -91,6 +91,76 @@ def is_quality_example(code: str, comment: str) -> tuple[bool, str]:
     if lower_comment.endswith("?") and comment.count("?") > comment.count("."):
         return False, "mostly_questions"
     
+    # Skip boilerplate/administrative comments (not insightful code review)
+    boilerplate_phrases = [
+        "copyright",
+        "license header",
+        "add license",
+        "add a license",
+        "fix formatting",
+        "run black",
+        "run ruff",
+        "run isort",
+        "run the linter",
+        "fix lint",
+        "typo in",
+        "spelling",
+        "nit:",
+        "nit ",
+        "minor:",
+        "minor nit",
+        "super nit",
+        "ultra nit",
+        "tiny nit",
+        "small nit",
+        "very minor",
+        "nitpick",
+        "bikeshed",
+        "style:",
+        "formatting:",
+        "whitespace",
+        "trailing space",
+        "blank line",
+        "empty line",
+        "newline at end",
+        "missing newline",
+        "add newline",
+    ]
+    
+    for phrase in boilerplate_phrases:
+        if phrase in lower_comment:
+            return False, "boilerplate"
+    
+    # Skip comments that are just links with minimal text
+    if comment.count("http") >= 2 and len(comment) < 200:
+        return False, "mostly_links"
+    
+    # Skip comments that reference other PRs/issues without substance
+    if lower_comment.startswith("see #") or lower_comment.startswith("related to #"):
+        if len(comment) < 100:
+            return False, "just_reference"
+    
+    # Skip very short comments that start with common low-value phrases
+    if len(comment) < 80:
+        low_value_starts = [
+            "can you",
+            "could you",
+            "please add",
+            "please remove",
+            "please update",
+            "same here",
+            "same as above",
+            "ditto",
+            "same comment",
+            "+1",
+            "this too",
+            "here too",
+            "also here",
+        ]
+        for phrase in low_value_starts:
+            if lower_comment.startswith(phrase):
+                return False, "low_value_short"
+    
     return True, "ok"
 
 

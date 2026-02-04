@@ -2,18 +2,21 @@
   "format": "chatml",
   "stats": {
     "total": 10809,
-    "kept": 8118,
+    "kept": 7792,
     "filtered": {
       "code_too_long": 1902,
       "mostly_questions": 695,
       "mostly_code_blocks": 20,
+      "mostly_links": 30,
+      "boilerplate": 274,
       "comment_too_short": 9,
       "comment_too_long": 34,
+      "low_value_short": 22,
       "code_too_short": 31
     }
   },
-  "train_count": 7306,
-  "eval_count": 812,
+  "train_count": 7012,
+  "eval_count": 780,
   "examples": [
     {
       "messages": [
@@ -23,17 +26,38 @@
         },
         {
           "role": "user",
-          "content": "Review this Python code from `utils.py`:\n\n```python\ngeneration_config = copy.deepcopy(generation_config)\n\n        # First set values from the loaded `self.generation_config`, then set default values (BC)\n        # Do not update any values that aren't `None`, i.e. if set by users explicitly and passed\n        # to `generate()`. Thus the `defaults_only=True` is used\n        #\n        # Only update values that are `None`, i.e. these values were not explicitly set by by users to `generate()`,\n        # or values that are not present in the current config, i.e. custom entries that were set via `**kwargs`.\n        # Thus we use the specific kwargs `defaults_only=True` (`None` values only) and `allow_custom_entries=True`\n        # (custom entries are carried over).\n        global_defaults = self.generation_config._get_default_generation_params()\n        generation_config.update(**self.generation_config.to_dict(), defaults_only=True)\n        generation_config.update(**self.generation_config.to_dict(), defaults_only=True, allow_custom_entries=True)\n```"
+          "content": "Review this Python code from `_urlparse.py`:\n\n```python\n# For 'path' we need to drop ? and # from the GEN_DELIMS set.\n    parsed_path: str = quote(path, safe=SUB_DELIMS + \":/[]@\")\n    # For 'query' we need to drop '#' from the GEN_DELIMS set.\n    # We also exclude '/' because it is more robust to replace it with a percent\n    # encoding despite it not being a requirement of the spec and include '%' to\n    # prevent duplicate encoding of previously quoted items.\n    parsed_query: typing.Optional[str] = (\n        None if query is None else quote(query, safe=SUB_DELIMS + \":/?[]@\")\n        None if query is None else quote(query, safe=SUB_DELIMS + \":?[]@%\")\n```"
         },
         {
           "role": "assistant",
-          "content": "Nope, not the case, e.g.\r\n```python\r\nfrom transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig\r\n\r\nmodel = AutoModelForCausalLM.from_pretrained(\r\n    \"meta-llama/Llama-3.2-3B-Instruct\",\r\n    device_map=\"auto\",\r\n    torch_dtype=\"auto\",\r\n    attn_implementation=\"flash_attention_2\",\r\n).eval()\r\ntokenizer = AutoTokenizer.from_pretrained(\"meta-llama/Llama-3.2-3B-Instruct\")\r\ntokenizer.pad_token = tokenizer.eos_token\r\ninputs = tokenizer(\r\n    [\"Hello, how are you?\", \"is this life?\"],\r\n    padding=True,\r\n    padding_side=\"left\",\r\n    return_tensors=\"pt\",\r\n).to(model.device)\r\n\r\noutputs = model.generate(**inputs, max_new_tokens=50, generation_config=GenerationConfig(do_sample=False))\r\nprint(tokenizer.batch_decode(outputs, skip_special_tokens=True))\r\n```\r\nWe will have different generation configs so it's not guaranteed."
+          "content": "I was surprised that I needed to include `%` but it was needed to to prevent spaces converted to `%20` from being changed to `%2520` in tests."
+        }
+      ],
+      "_meta": {
+        "repo": "encode/httpx",
+        "pr_number": 2723,
+        "url": "https://github.com/encode/httpx/pull/2723#discussion_r1207129278"
+      }
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
+        },
+        {
+          "role": "user",
+          "content": "Review this Python code from `setup.py`:\n\n```python\n\"tokenizers\",\n    \"tqdm\",\n)\n\na = 1\n```"
+        },
+        {
+          "role": "assistant",
+          "content": "This line `a = 1` appears to be accidentally added debug code and should be removed. It serves no purpose in the setup file.\n```suggestion\n\n```"
         }
       ],
       "_meta": {
         "repo": "huggingface/transformers",
-        "pr_number": 43181,
-        "url": "https://github.com/huggingface/transformers/pull/43181#discussion_r2676708169"
+        "pr_number": 42260,
+        "url": "https://github.com/huggingface/transformers/pull/42260#discussion_r2539083481"
       }
     },
     {
@@ -44,164 +68,17 @@
         },
         {
           "role": "user",
-          "content": "Review this Python code from `pep_572_remove_parens.py`:\n\n```python\ndef this_is_so_dumb() -> (please := no):\n    pass\n\n\nasync def await_the_walrus():\n    with (x := y):\n        pass\n\n    with (x := y) as z, (a := b) as c:\n        pass\n\n    with (x := await y):\n        pass\n\n    with (x := await a, y := await b):\n        pass\n\n    # Ideally we should remove one set of parentheses\n    with ((x := await a, y := await b)):\n        pass\n```"
+          "content": "Review this Python code from `serialized_dag.py`:\n\n```python\nreturn False\n\n        if dag_version and not dag_version.task_instances:\n            # This is for dynamic DAGs that the hashes changes often. We should update\n            # the serialized dag, the dag_version and the dag_code instead of a new version\n            # if the dag_version is not associated with any task instances\n            latest_ser_dag = cls.get(dag.dag_id, session=session)\n            if TYPE_CHECKING:\n                assert latest_ser_dag is not None\n            # Update the serialized DAG with the new_serialized_dag\n            latest_ser_dag._data = new_serialized_dag._data\n            latest_ser_dag._data_compressed = new_serialized_dag._data_compressed\n            latest_ser_dag.dag_hash = new_serialized_dag.dag_hash\n            session.merge(latest_ser_dag)\n            # The dag_version and dag_code may not have changed, still we should\n            # do the below actions:\n            # Update the latest dag version\n            dag_version.bundle_name = bundle_name\n            dag_version.bundle_version = bundle_version\n            session.merge(dag_version)\n            # Update the latest DagCode\n            DagCode.update_source_code(dag_id=dag.dag_id, fileloc=dag.fileloc, session=session)\n            return True\n            # This is for dynamic DAGs whose hashes change often. We should update\n            # the serialized DAG, the dag_version, and the dag_code instead of creating\n            # a new version if the dag_version has no associated task instances.\n\n            latest_ser_dag = dag_version.serialized_dag  # Use serialized_dag directly from dag_version\n\n            if latest_ser_dag:\n```"
         },
         {
           "role": "assistant",
-          "content": "That seems fine, since the main purpose of this test is to make sure we don't crash on this case. We can always change the exact test output when that part of the preview style becomes stable."
-        }
-      ],
-      "_meta": {
-        "repo": "psf/black",
-        "pr_number": 3473,
-        "url": "https://github.com/psf/black/pull/3473#discussion_r1057396263"
-      }
-    },
-    {
-      "messages": [
-        {
-          "role": "system",
-          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
-        },
-        {
-          "role": "user",
-          "content": "Review this Python code from `test_requests.py`:\n\n```python\nassert isinstance(s, builtin_str)\n        assert s == \"Basic dGVzdDp0ZXN0\"\n\n    def test_requests_history_is_saved(self):\n        r = requests.get('https://httpbin.org/redirect/5')\n        count = 0\n        for item in r.history:\n            assert len(item.history) == count\n            count = count + 1\n```"
-        },
-        {
-          "role": "assistant",
-          "content": "Can we make this test a bit more rigorous? We should be able to assert that each item has the correct slice of the history as well."
-        }
-      ],
-      "_meta": {
-        "repo": "psf/requests",
-        "pr_number": 2168,
-        "url": "https://github.com/psf/requests/pull/2168#discussion_r16338170"
-      }
-    },
-    {
-      "messages": [
-        {
-          "role": "system",
-          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
-        },
-        {
-          "role": "user",
-          "content": "Review this Python code from `test_feedexport.py`:\n\n```python\nmaxDiff = None\n\n    def test_init(self):\n        settings_dict = {\n            'FEED_URI': 'file:///tmp/foobar',\n            'FEED_STORAGES': {\n                'file': FileFeedStorageWithoutFeedOptions\n            },\n        }\n        crawler = get_crawler(settings_dict=settings_dict)\n        feed_exporter = FeedExporter.from_crawler(crawler)\n        with tempfile.NamedTemporaryFile() as temp:\n            settings_dict = {\n                'FEED_URI': f'file:///{temp.name}',\n```"
-        },
-        {
-          "role": "assistant",
-          "content": "What is the value of `temp.name` here? Aren\u2019t there 1 too many / in the URI scheme here? And if so, how are tests working nonetheless?\r\n\r\nAlso, according to https://docs.python.org/3/library/tempfile.html#tempfile.NamedTemporaryFile:\r\n\r\n> Whether the name can be used to open the file a second time, while the named temporary file is still open, varies across platforms (it can be so used on Unix; it cannot on Windows NT or later).\r\n\r\nWhich makes me wonder how tests are passing in Windows."
-        }
-      ],
-      "_meta": {
-        "repo": "scrapy/scrapy",
-        "pr_number": 5198,
-        "url": "https://github.com/scrapy/scrapy/pull/5198#discussion_r676646957"
-      }
-    },
-    {
-      "messages": [
-        {
-          "role": "system",
-          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
-        },
-        {
-          "role": "user",
-          "content": "Review this Python code from `_client.py`:\n\n```python\n) -> None:\n        await self.aclose()\n\n    def __del__(self) -> None:\n        if not self.is_closed:\n            warnings.warn(\n                f\"Unclosed {self!r}. \"\n                \"Please call\\n\"\n                \"\\t>>> await async_client.aclose()\\n\"\n                \"or use it as a context manager\\n\"\n                \"\\t>>> async with httpx.AsyncClient() as client:\\n\"\n                \"\\t>>>     ...\",\n                ResourceWarning,\n            )\n```"
-        },
-        {
-          "role": "assistant",
-          "content": "Right, I'm going to suggest that we use `UserWarning` for this case, for better visibility.\r\n\r\nWe'll eventually end up tracking individual connections with proper a `ResourceWarning` against each of those, but this is a good case for a higher-level warning I think.\r\n\r\nAlso, let's make sure to use a more concise warning format.\r\n\r\nPerhaps...\r\n\r\n```python\r\nwarnings.warn(\"Unclosed {self!r}. See https://www.python-httpx.org/async/#opening-and-closing-clients for details.\")\r\n```\r\n\r\nThen we can add a little more context in the documentation.\r\n\r\nWhat do we think?"
-        }
-      ],
-      "_meta": {
-        "repo": "encode/httpx",
-        "pr_number": 1197,
-        "url": "https://github.com/encode/httpx/pull/1197#discussion_r474644263"
-      }
-    },
-    {
-      "messages": [
-        {
-          "role": "system",
-          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
-        },
-        {
-          "role": "user",
-          "content": "Review this Python code from `_urlparse.py`:\n\n```python\n)\n\n\ndef quote(string: str, safe: str = \"/\") -> str:\n    \"\"\"\n    Use percent-encoding to quote a string, omitting existing '%xx' escape sequences.\n    \"\"\"\n    parts = []\n    current_position = 0\n    for match in re.finditer(PERCENT_ENCODED_REGEX, string):\n        start_position, end_position = match.start(), match.end()\n        matched_text = match.group(0)\n        # Add any text up to the '%xx' escape sequence.\n        if start_position != current_position:\n            leading_text = string[current_position:start_position]\n            parts.append(percent_encoded(leading_text, safe=safe))\n\n        # Add the '%xx' escape sequence.\n        parts.append(matched_text)\n        current_position = end_position\n\n    # Add any text after the final '%xx' escape sequence.\n    if current_position != len(string):\n        trailing_text = string[current_position:]\n        parts.append(percent_encoded(trailing_text, safe=safe))\n\n    return \"\".join(parts)\n```"
-        },
-        {
-          "role": "assistant",
-          "content": "It could, yes. I've gone with this pattern because in the past we've seen performance issues with the `+=` pattern, that a `.append() ... \"\".join()` pattern resolves. Might not be the case in this context, since we've got strict limits on the allowable string lengths in URLs. But... let's handle any performance related considerations separately to the behavioural fixes."
-        }
-      ],
-      "_meta": {
-        "repo": "encode/httpx",
-        "pr_number": 2990,
-        "url": "https://github.com/encode/httpx/pull/2990#discussion_r1422164211"
-      }
-    },
-    {
-      "messages": [
-        {
-          "role": "system",
-          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
-        },
-        {
-          "role": "user",
-          "content": "Review this Python code from `_api.py`:\n\n```python\nauth: AuthTypes | None = None,\n    proxy: ProxyTypes | None = None,\n    follow_redirects: bool = False,\n    cert: CertTypes | None = None,\n    verify: VerifyTypes = True,\n    ssl_context: typing.Optional[ssl.SSLContext] = None,\n```"
-        },
-        {
-          "role": "assistant",
-          "content": "```suggestion\r\n    ssl_context: ssl.SSLContext | None = None,\r\n```"
-        }
-      ],
-      "_meta": {
-        "repo": "encode/httpx",
-        "pr_number": 3022,
-        "url": "https://github.com/encode/httpx/pull/3022#discussion_r1790227449"
-      }
-    },
-    {
-      "messages": [
-        {
-          "role": "system",
-          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
-        },
-        {
-          "role": "user",
-          "content": "Review this Python code from `test_modeling_bart.py`:\n\n```python\nwith torch.no_grad():\n                model(**inputs)[0]\n\n    def test_input_embeddings_support_forward_hook(self):\n```"
-        },
-        {
-          "role": "assistant",
-          "content": "Can you add a comment here:\r\n- Why we have this test\r\n- Reference this PR"
-        }
-      ],
-      "_meta": {
-        "repo": "huggingface/transformers",
-        "pr_number": 41821,
-        "url": "https://github.com/huggingface/transformers/pull/41821#discussion_r2456466214"
-      }
-    },
-    {
-      "messages": [
-        {
-          "role": "system",
-          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
-        },
-        {
-          "role": "user",
-          "content": "Review this Python code from `test_supervisor.py`:\n\n```python\nbackend = ExampleBackend()\n    monkeypatch.setattr(supervisor, \"ensure_secrets_backend_loaded\", lambda: [backend])\n    monkeypatch.setattr(sdk_log, \"load_remote_log_handler\", lambda: object())\n    monkeypatch.setattr(sdk_log, \"load_remote_conn_id\", lambda: \"test_conn\")\n    monkeypatch.delenv(\"AIRFLOW_CONN_TEST_CONN\", raising=False)\n\n    def noop_request(request: httpx.Request) -> httpx.Response:\n        return httpx.Response(200)\n\n    clients = []\n    for _ in range(3):\n        client = make_client(transport=httpx.MockTransport(noop_request))\n        clients.append(weakref.ref(client))\n        with _remote_logging_conn(client):\n            pass\n        client.close()\n        del client\n\n    gc.collect()\n    assert backend.calls == 1, \"Connection should be cached, not fetched multiple times\"\n    assert all(ref() is None for ref in clients), \"Client instances should be garbage collected\"\n    with conf_vars(\n        {\n            (\"logging\", \"remote_logging\"): \"True\",\n            (\"logging\", \"remote_base_log_folder\"): \"s3://bucket/logs\",\n            (\"logging\", \"remote_log_conn_id\"): \"test_conn\",\n        }\n    ):\n```"
-        },
-        {
-          "role": "assistant",
-          "content": "Instead of patching `load_remote_log_handler` and `load_remote_conn_id`, we can just populate the right env's and rest will be handled by the code called when `_remote_logging_conn` is called."
+          "content": "If we have `dag_version`, then there must be a serialized_dag. We need to make sure that latest_ser_dag is never none. You should make sure that `serialized_dag` is loaded when `DagVersion.get_latest_version` is called. So also update that method"
         }
       ],
       "_meta": {
         "repo": "apache/airflow",
-        "pr_number": 60826,
-        "url": "https://github.com/apache/airflow/pull/60826#discussion_r2719525953"
+        "pr_number": 56422,
+        "url": "https://github.com/apache/airflow/pull/56422#discussion_r2432334084"
       }
     },
     {
@@ -212,17 +89,143 @@
         },
         {
           "role": "user",
-          "content": "Review this Python code from `test_modeling_glm_image.py`:\n\n```python\ndef test_model_parallelism(self):\n        pass\n\n    @unittest.skip(reason=\"GLM-Image has special image token IDs that get clamped when vocab is resized smaller\")\n    def test_resize_embeddings_untied(self):\n        pass\n\n    @unittest.skip(reason=\"GLM-Image has special image token IDs that get clamped when vocab is resized smaller\")\n    def test_resize_tokens_embeddings(self):\n        pass\n```"
+          "content": "Review this Python code from `modeling_sam3.py`:\n\n```python\nif self.config._attn_implementation != \"eager\":\n            attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]\n\n        if (\n            self.config._attn_implementation == \"flash_attention_2\"\n            and attention_mask is not None\n            and attention_mask.dtype != torch.bool\n        ):\n            # Relative position bias tensors are represented as float masks and are incompatible with Flash Attention 2.\n            # Fallback to SDPA for this call only so the rest of the model can still benefit from FA2.\n            attention_interface = ALL_ATTENTION_FUNCTIONS[\"sdpa\"]\n            logger.warning_once(\n                \"Sam3Attention: falling back to SDPA for relative-position cross-attention because \"\n                \"Flash Attention 2 does not support additive bias masks.\"\n            )\n```"
         },
         {
           "role": "assistant",
-          "content": "we need to assign `image_token_id` to a different token id in that case. It can be done in `GlmImageModelTester`"
+          "content": "But yea, FA itself cannot support relative biases (except alibi). There was a different library which might support this #41882 (FA with biases)."
         }
       ],
       "_meta": {
         "repo": "huggingface/transformers",
-        "pr_number": 43342,
-        "url": "https://github.com/huggingface/transformers/pull/43342#discussion_r2732471374"
+        "pr_number": 42543,
+        "url": "https://github.com/huggingface/transformers/pull/42543#discussion_r2581308204"
+      }
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
+        },
+        {
+          "role": "user",
+          "content": "Review this Python code from `test_pools.py`:\n\n```python\nassert response_data[\"update\"][\"success\"] == [\"pool1\"]\n\n        # Assert: fetch from DB and check only masked field changed\n        updated_pool = session.query(Pool).filter_by(pool=\"pool1\").one()\n        updated_pool = session.execute(select(Pool).where(Pool.pool == \"pool1\")).scalar_one()\n```"
+        },
+        {
+          "role": "assistant",
+          "content": "`.scalar()` works, but `.one()` or `scalar_one(`) are stricter for tests here"
+        }
+      ],
+      "_meta": {
+        "repo": "apache/airflow",
+        "pr_number": 59733,
+        "url": "https://github.com/apache/airflow/pull/59733#discussion_r2649602827"
+      }
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
+        },
+        {
+          "role": "user",
+          "content": "Review this Python code from `module_common.py`:\n\n```python\n)\n\n\ndef _get_action_arg_defaults(action: str, task: Task, templar: TemplateEngine) -> dict[str, t.Any]:\ndef _get_action_arg_defaults(action: str, task: Task, templar: TemplateEngine, finalize: bool = False) -> dict[str, t.Any]:\n    \"\"\"Get module_defaults that match or contain a fully qualified action/module name.\n```"
+        },
+        {
+          "role": "assistant",
+          "content": "For consistency with the majority of our multi-line docstrings, put start and end quotes on a line by themselves."
+        }
+      ],
+      "_meta": {
+        "repo": "ansible/ansible",
+        "pr_number": 85857,
+        "url": "https://github.com/ansible/ansible/pull/85857#discussion_r2666408554"
+      }
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
+        },
+        {
+          "role": "user",
+          "content": "Review this Python code from `conformance.py`:\n\n```python\nreturn \"True positives removed\"\n\n\n@dataclass(kw_only=True, slots=True)\nclass Evaluation:\n```"
+        },
+        {
+          "role": "assistant",
+          "content": "With the last set of changes, we now count the diagnostics individually. So if ty emits 5 diagnostics on the same line where a \"# E\" is present, we're counting them all as true positives. Similarly, if ty raises 3 diagnostics on one line of a tagged group (no '+') and 1 on each of the other lines, we count the 3 diagnostics as true positives and the remainder as false positives. \n\nHappy to keep iterating on it though if this doesn't make sense."
+        }
+      ],
+      "_meta": {
+        "repo": "astral-sh/ruff",
+        "pr_number": 22746,
+        "url": "https://github.com/astral-sh/ruff/pull/22746#discussion_r2723118794"
+      }
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
+        },
+        {
+          "role": "user",
+          "content": "Review this Python code from `modeling_test_detr.py`:\n\n```python\nbatch_size, num_queries, _ = hidden_states.shape\n        batch_size, sequence_length, _ = encoder_hidden_states.shape\n        total_elements = sum(height * width for height, width in spatial_shapes_list)\n        if total_elements != sequence_length:\n            raise ValueError(\n                \"Make sure to align the spatial shapes with the sequence length of the encoder hidden states\"\n            )\n        check_with(\n            ValueError,\n```"
+        },
+        {
+          "role": "assistant",
+          "content": "We should put the value error as a default because it seems to be used everywhere this way the more common cases were checked with function is used will be simplified"
+        }
+      ],
+      "_meta": {
+        "repo": "huggingface/transformers",
+        "pr_number": 42317,
+        "url": "https://github.com/huggingface/transformers/pull/42317#discussion_r2704255253"
+      }
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
+        },
+        {
+          "role": "user",
+          "content": "Review this Python code from `_model_construction.py`:\n\n```python\nreturn super().__setitem__(k, v)\n\n\n@dataclass_transform(kw_only_default=True, field_specifiers=(PydanticModelField, PydanticModelPrivateAttr))\ndef NoInitField(\n    default: Any = PydanticUndefined,\n    *,\n    default_factory: typing.Callable[[], Any] | None = None,\n    init: Literal[False] = False,\n) -> Any:\n    \"\"\"Only for typing purpose. Used as default value of `__pydantic_fields_set__`,\n```"
+        },
+        {
+          "role": "assistant",
+          "content": "```suggestion\r\n    \"\"\"Only for typing purposes. Used as default value of `__pydantic_fields_set__`,\r\n```"
+        }
+      ],
+      "_meta": {
+        "repo": "pydantic/pydantic",
+        "pr_number": 10110,
+        "url": "https://github.com/pydantic/pydantic/pull/10110#discussion_r1714810295"
+      }
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are an expert code reviewer. Analyze the provided Python code and give constructive, specific feedback. Focus on bugs, potential issues, code quality, and improvements. Be direct and actionable."
+        },
+        {
+          "role": "user",
+          "content": "Review this Python code from `test_video_processing_qwen2_vl.py`:\n\n```python\nself.assertListEqual(list(encoded_videos.shape), expected_output_video_shape)\n            self.assertListEqual(list(encoded_videos_batched.shape), expected_output_video_shape_batched)\n\n            # Sample with `fps` requires metadata to infer number of frames from total duration\n```"
+        },
+        {
+          "role": "assistant",
+          "content": "It was defaulting to `fps=2.0` previously in Qwen without warning/error, so this part is mostly for BC. Yeah, we could raise a warning once to discourage users from falling to default fps path, as you noted in below comment\r\n\r\nThough an error might be a bit breaking especially for such high usage model as Qwen, we never know is users are happily exploiting the default values"
+        }
+      ],
+      "_meta": {
+        "repo": "huggingface/transformers",
+        "pr_number": 39600,
+        "url": "https://github.com/huggingface/transformers/pull/39600#discussion_r2282117663"
       }
     }
   ]
