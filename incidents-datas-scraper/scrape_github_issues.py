@@ -9,6 +9,10 @@ import time
 import os
 from datetime import datetime
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load the .env file
+load_dotenv()
 
 # =============================================================================
 # CONFIGURATION

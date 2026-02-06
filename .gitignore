@@ -1,18 +1,27 @@
 # Python cache
 __pycache__/
+*.pyc
+*.pyo
 
 # Virtual environment
 venv/
+.venv/
 
 # Environment variables
 .env
 
-# Byte-compiled files
-*.pyc
+# IDE
+.vscode/
+.idea/
 
 # Logs
 *.log
 
-
 # OS files
 .DS_Store
+Thumbs.db
+
+# Distribution
+*.egg-info/
+dist/
+build/
