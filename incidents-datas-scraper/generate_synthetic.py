@@ -11,6 +11,9 @@ import random
 import time
 from pathlib import Path
 from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv()
+
 
 # =============================================================================
 # CONFIGURATION
