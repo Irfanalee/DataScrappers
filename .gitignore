@@ -27,5 +27,5 @@ dist/
 build/
 
 CLAUDE_CODE_PROMPT.md
-
+unsloth_compiled_cache
 
