@@ -157,11 +157,12 @@ def download_cuad():
     output_path = Path(OUTPUT_DIR) / "cuad"
     output_path.mkdir(parents=True, exist_ok=True)
     
-    # Load from HuggingFace
-    dataset = load_dataset("theatticusproject/cuad-qa")
-    
-    print(f"Train: {len(dataset['train'])} examples")
-    print(f"Test: {len(dataset['test'])} examples")
+    # Load from HuggingFace (script-free parquet version)
+    dataset = load_dataset("dvgodoy/CUAD_v1_Contract_Understanding_clause_classification")
+
+    print(f"Splits: {list(dataset.keys())}")
+    for split in dataset.keys():
+        print(f"  {split}: {len(dataset[split])} examples")
     
     # Save
     dataset.save_to_disk(str(output_path))
@@ -169,10 +170,9 @@ def download_cuad():
     
     # Preview
     print("\nSample:")
-    sample = dataset['train'][0]
-    print(f"  Question: {sample['question'][:100]}...")
-    print(f"  Answer: {sample['answers']['text'][0][:100] if sample['answers']['text'] else 'N/A'}...")
-    
+    sample = dataset[list(dataset.keys())[0]][0]
+    print(f"  Keys: {list(sample.keys())}")
+
     return dataset
 
 
