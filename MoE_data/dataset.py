@@ -10,9 +10,9 @@ Datasets:
 5. SROIE - Scanned Receipts OCR
 
 Usage:
-    python download_datasets.py --all
-    python download_datasets.py --dataset docvqa
-    python download_datasets.py --dataset cord
+    python dataset.py --all
+    python dataset.py --dataset docvqa
+    python dataset.py --dataset cord
 """
 
 import argparse
@@ -24,7 +24,7 @@ from tqdm import tqdm
 
 load_dotenv()
 
-OUTPUT_DIR = "data/datasets"
+OUTPUT_DIR = "data"
 
 
 def download_docvqa():
