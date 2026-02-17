@@ -1,0 +1,348 @@
+"""
+Dataset Downloader for Multi-Modal Document Analyzer
+Downloads and prepares datasets for fine-tuning.
+
+Datasets:
+1. DocVQA - Document Visual QA (general documents)
+2. Docmatix - Large-scale DocVQA (2.4M images, 9.5M Q&A pairs)
+3. CORD - Receipt/Invoice parsing
+4. CUAD - Contract Understanding (legal contracts)
+5. SROIE - Scanned Receipts OCR
+
+Usage:
+    python download_datasets.py --all
+    python download_datasets.py --dataset docvqa
+    python download_datasets.py --dataset cord
+"""
+
+import argparse
+import json
+from pathlib import Path
+from datasets import load_dataset
+from dotenv import load_dotenv
+from tqdm import tqdm
+
+load_dotenv()
+
+OUTPUT_DIR = "data/datasets"
+
+
+def download_docvqa():
+    """
+    Download DocVQA dataset.
+    - 50,000 questions on 12,767 document images
+    - Mix of printed, typewritten, handwritten content
+    - Letters, memos, notes, reports
+    """
+    print("\n" + "=" * 60)
+    print("Downloading DocVQA...")
+    print("=" * 60)
+    
+    output_path = Path(OUTPUT_DIR) / "docvqa"
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Load from HuggingFace
+    dataset = load_dataset("HuggingFaceM4/DocumentVQA")
+    
+    print(f"Train: {len(dataset['train'])} examples")
+    print(f"Validation: {len(dataset['validation'])} examples")
+    print(f"Test: {len(dataset['test'])} examples")
+    
+    # Save
+    dataset.save_to_disk(str(output_path))
+    print(f"Saved to: {output_path}")
+    
+    # Preview
+    print("\nSample:")
+    sample = dataset['train'][0]
+    print(f"  Question: {sample.get('question', sample.get('questions', ['N/A'])[0] if isinstance(sample.get('questions'), list) else 'N/A')}")
+    print(f"  Keys: {list(sample.keys())}")
+    
+    return dataset
+
+
+def download_docmatix():
+    """
+    Download Docmatix dataset (subset).
+    - 2.4 million images, 9.5 million Q/A pairs
+    - 100x larger than DocVQA
+    - We download a subset for fine-tuning
+    """
+    print("\n" + "=" * 60)
+    print("Downloading Docmatix (subset)...")
+    print("=" * 60)
+    
+    output_path = Path(OUTPUT_DIR) / "docmatix"
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Load subset (full dataset is huge)
+    # Using streaming to avoid downloading everything
+    dataset = load_dataset(
+        "HuggingFaceM4/Docmatix",
+        split="train",
+        streaming=True
+    )
+    
+    # Take first 50k examples
+    print("Downloading first 50,000 examples...")
+    examples = []
+    for i, example in enumerate(tqdm(dataset, total=50000)):
+        if i >= 50000:
+            break
+        examples.append(example)
+    
+    print(f"Downloaded: {len(examples)} examples")
+    
+    # Save as JSON
+    output_file = output_path / "docmatix_50k.json"
+    with open(output_file, "w") as f:
+        json.dump({"examples": examples}, f)
+    
+    print(f"Saved to: {output_file}")
+    
+    return examples
+
+
+def download_cord():
+    """
+    Download CORD dataset (receipts/invoices).
+    - 11,000+ Indonesian receipts
+    - 30 semantic classes, 5 superclasses
+    - Menu items, totals, subtotals
+    """
+    print("\n" + "=" * 60)
+    print("Downloading CORD (Receipt Dataset)...")
+    print("=" * 60)
+    
+    output_path = Path(OUTPUT_DIR) / "cord"
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Try different versions
+    try:
+        dataset = load_dataset("naver-clova-ix/cord-v2")
+    except Exception:
+        try:
+            dataset = load_dataset("katanaml/cord")
+        except Exception:
+            dataset = load_dataset("Voxel51/consolidated_receipt_dataset")
+    
+    print(f"Splits: {list(dataset.keys())}")
+    for split in dataset.keys():
+        print(f"  {split}: {len(dataset[split])} examples")
+    
+    # Save
+    dataset.save_to_disk(str(output_path))
+    print(f"Saved to: {output_path}")
+    
+    # Preview
+    print("\nSample:")
+    sample = dataset[list(dataset.keys())[0]][0]
+    print(f"  Keys: {list(sample.keys())}")
+    
+    return dataset
+
+
+def download_cuad():
+    """
+    Download CUAD dataset (contracts).
+    - 13,000+ labels in 510 commercial contracts
+    - 41 categories of important clauses
+    - Legal contract review
+    """
+    print("\n" + "=" * 60)
+    print("Downloading CUAD (Contract Dataset)...")
+    print("=" * 60)
+    
+    output_path = Path(OUTPUT_DIR) / "cuad"
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Load from HuggingFace
+    dataset = load_dataset("theatticusproject/cuad-qa")
+    
+    print(f"Train: {len(dataset['train'])} examples")
+    print(f"Test: {len(dataset['test'])} examples")
+    
+    # Save
+    dataset.save_to_disk(str(output_path))
+    print(f"Saved to: {output_path}")
+    
+    # Preview
+    print("\nSample:")
+    sample = dataset['train'][0]
+    print(f"  Question: {sample['question'][:100]}...")
+    print(f"  Answer: {sample['answers']['text'][0][:100] if sample['answers']['text'] else 'N/A'}...")
+    
+    return dataset
+
+
+def download_sroie():
+    """
+    Download SROIE dataset (scanned receipts).
+    - 973 scanned receipts in English
+    - OCR and information extraction
+    """
+    print("\n" + "=" * 60)
+    print("Downloading SROIE (Scanned Receipts)...")
+    print("=" * 60)
+    
+    output_path = Path(OUTPUT_DIR) / "sroie"
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Load from HuggingFace
+    try:
+        dataset = load_dataset("darentang/sroie")
+    except Exception:
+        dataset = load_dataset("priyank-m/SROIE_2019_text_recognition")
+    
+    print(f"Splits: {list(dataset.keys())}")
+    for split in dataset.keys():
+        print(f"  {split}: {len(dataset[split])} examples")
+    
+    # Save
+    dataset.save_to_disk(str(output_path))
+    print(f"Saved to: {output_path}")
+    
+    return dataset
+
+
+def download_funsd():
+    """
+    Download FUNSD dataset (forms).
+    - Form understanding in noisy scanned documents
+    - Entity and relation labeling
+    """
+    print("\n" + "=" * 60)
+    print("Downloading FUNSD (Forms Dataset)...")
+    print("=" * 60)
+    
+    output_path = Path(OUTPUT_DIR) / "funsd"
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Load from HuggingFace
+    dataset = load_dataset("nielsr/funsd")
+    
+    print(f"Train: {len(dataset['train'])} examples")
+    print(f"Test: {len(dataset['test'])} examples")
+    
+    # Save
+    dataset.save_to_disk(str(output_path))
+    print(f"Saved to: {output_path}")
+    
+    return dataset
+
+
+def show_dataset_summary():
+    """Show summary of available datasets."""
+    print("\n" + "=" * 60)
+    print("AVAILABLE DATASETS FOR DOCUMENT INTELLIGENCE")
+    print("=" * 60)
+    
+    datasets_info = [
+        {
+            "name": "DocVQA",
+            "id": "docvqa",
+            "description": "Document Visual QA - general documents",
+            "size": "50K questions, 12K images",
+            "use_for": "General document understanding"
+        },
+        {
+            "name": "Docmatix",
+            "id": "docmatix", 
+            "description": "Large-scale DocVQA dataset",
+            "size": "2.4M images, 9.5M Q&A pairs",
+            "use_for": "Pre-training / large-scale fine-tuning"
+        },
+        {
+            "name": "CORD",
+            "id": "cord",
+            "description": "Receipt parsing dataset",
+            "size": "11K+ receipts",
+            "use_for": "Invoice/Receipt extraction"
+        },
+        {
+            "name": "CUAD",
+            "id": "cuad",
+            "description": "Contract Understanding dataset",
+            "size": "510 contracts, 13K labels, 41 clause types",
+            "use_for": "Contract analysis"
+        },
+        {
+            "name": "SROIE",
+            "id": "sroie",
+            "description": "Scanned Receipts OCR",
+            "size": "973 receipts",
+            "use_for": "Receipt OCR + extraction"
+        },
+        {
+            "name": "FUNSD",
+            "id": "funsd",
+            "description": "Form Understanding in Scanned Documents",
+            "size": "199 forms",
+            "use_for": "Form field extraction"
+        },
+    ]
+    
+    for ds in datasets_info:
+        print(f"\n📄 {ds['name']} ({ds['id']})")
+        print(f"   {ds['description']}")
+        print(f"   Size: {ds['size']}")
+        print(f"   Use for: {ds['use_for']}")
+    
+    print("\n" + "-" * 60)
+    print("Usage:")
+    print("  python download_datasets.py --all              # Download all")
+    print("  python download_datasets.py --dataset docvqa   # Download specific")
+    print("  python download_datasets.py --dataset cord cuad # Download multiple")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Download datasets for document intelligence")
+    parser.add_argument("--all", action="store_true", help="Download all datasets")
+    parser.add_argument("--dataset", nargs="+", 
+                        choices=["docvqa", "docmatix", "cord", "cuad", "sroie", "funsd"],
+                        help="Specific dataset(s) to download")
+    parser.add_argument("--list", action="store_true", help="List available datasets")
+    
+    args = parser.parse_args()
+    
+    if args.list or (not args.all and not args.dataset):
+        show_dataset_summary()
+        return
+    
+    Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+    
+    download_functions = {
+        "docvqa": download_docvqa,
+        "docmatix": download_docmatix,
+        "cord": download_cord,
+        "cuad": download_cuad,
+        "sroie": download_sroie,
+        "funsd": download_funsd,
+    }
+    
+    if args.all:
+        datasets_to_download = list(download_functions.keys())
+    else:
+        datasets_to_download = args.dataset
+    
+    print("=" * 60)
+    print("DATASET DOWNLOADER")
+    print("=" * 60)
+    print(f"Downloading: {', '.join(datasets_to_download)}")
+    print(f"Output directory: {OUTPUT_DIR}")
+    
+    for dataset_name in datasets_to_download:
+        try:
+            download_functions[dataset_name]()
+        except Exception as e:
+            print(f"\n❌ Error downloading {dataset_name}: {e}")
+            continue
+    
+    print("\n" + "=" * 60)
+    print("DOWNLOAD COMPLETE")
+    print("=" * 60)
+    print(f"Datasets saved to: {OUTPUT_DIR}/")
+
+
+if __name__ == "__main__":
+    main()
