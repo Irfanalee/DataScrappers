@@ -210,21 +210,67 @@ def download_sroie():
     output_path = Path(OUTPUT_DIR) / "sroie"
     output_path.mkdir(parents=True, exist_ok=True)
     
-    # Load from HuggingFace
-    try:
-        dataset = load_dataset("darentang/sroie")
-    except Exception:
-        dataset = load_dataset("priyank-m/SROIE_2019_text_recognition")
-    
-    print(f"Splits: {list(dataset.keys())}")
-    for split in dataset.keys():
-        print(f"  {split}: {len(dataset[split])} examples")
-    
-    # Save
-    dataset.save_to_disk(str(output_path))
+    # Load from HuggingFace using streaming to avoid OOM
+    dataset_name = "darentang/sroie"
+    fallback_name = "priyank-m/SROIE_2019_text_recognition"
+
+    for name in [dataset_name, fallback_name]:
+        try:
+            # First get split names via streaming
+            load_dataset(name, split="train", streaming=True)
+            splits = ["train", "test"]
+            break
+        except Exception:
+            if name == fallback_name:
+                raise
+            continue
+
+    images_dir = output_path / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    total_count = 0
+    for split in splits:
+        try:
+            stream = load_dataset(name, split=split, streaming=True)
+        except Exception:
+            print(f"  Skipping split '{split}' (not found)")
+            continue
+
+        split_dir = images_dir / split
+        split_dir.mkdir(parents=True, exist_ok=True)
+        metadata_file = output_path / f"sroie_{split}.jsonl"
+
+        count = 0
+        with open(metadata_file, "w") as f:
+            for example in tqdm(stream, desc=f"  {split}"):
+                # Save image to disk
+                saved_images = []
+                for key in ["image", "images"]:
+                    img = example.get(key)
+                    if img is None:
+                        continue
+                    imgs = img if isinstance(img, list) else [img]
+                    for img_idx, im in enumerate(imgs):
+                        img_path = split_dir / f"{count:06d}_{img_idx}.png"
+                        if hasattr(im, "save"):
+                            im.save(str(img_path))
+                            saved_images.append(str(img_path))
+
+                # Write metadata without image data
+                meta = {k: v for k, v in example.items() if k not in ("image", "images")}
+                meta["image_paths"] = saved_images
+                meta["example_id"] = count
+                f.write(json.dumps(meta) + "\n")
+                count += 1
+
+        print(f"  {split}: {count} examples")
+        total_count += count
+
+    print(f"Downloaded: {total_count} total examples")
+    print(f"Images saved to: {images_dir}")
     print(f"Saved to: {output_path}")
-    
-    return dataset
+
+    return total_count
 
 
 def download_funsd():
