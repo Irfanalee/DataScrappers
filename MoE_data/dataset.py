@@ -3,11 +3,11 @@ Dataset Downloader for Multi-Modal Document Analyzer
 Downloads and prepares datasets for fine-tuning.
 
 Datasets:
-1. DocVQA - Document Visual QA (general documents)
+1. DocVQA - Document Visual QA (general documents) -- done
 2. Docmatix - Large-scale DocVQA (2.4M images, 9.5M Q&A pairs)
-3. CORD - Receipt/Invoice parsing
-4. CUAD - Contract Understanding (legal contracts)
-5. SROIE - Scanned Receipts OCR
+3. CORD - Receipt/Invoice parsing -- done
+4. CUAD - Contract Understanding (legal contracts) -- done
+5. SROIE - Scanned Receipts OCR -- done
 
 Usage:
     python dataset.py --all
@@ -80,28 +80,49 @@ def download_docmatix():
     # Using streaming to avoid downloading everything
     dataset = load_dataset(
         "HuggingFaceM4/Docmatix",
+        "images",
         split="train",
         streaming=True
     )
-    
-    # Take first 50k examples
-    print("Downloading first 50,000 examples...")
-    examples = []
-    for i, example in enumerate(tqdm(dataset, total=50000)):
-        if i >= 50000:
-            break
-        examples.append(example)
-    
-    print(f"Downloaded: {len(examples)} examples")
-    
-    # Save as JSON
-    output_file = output_path / "docmatix_50k.json"
-    with open(output_file, "w") as f:
-        json.dump({"examples": examples}, f)
-    
-    print(f"Saved to: {output_file}")
-    
-    return examples
+
+    # Save incrementally to avoid OOM — images go to disk, metadata to JSONL
+    images_dir = output_path / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+    metadata_file = output_path / "docmatix_50k.jsonl"
+
+    max_examples = 50000
+    print(f"Downloading first {max_examples} examples (streaming to disk)...")
+
+    count = 0
+    with open(metadata_file, "w") as f:
+        for example in tqdm(dataset, total=max_examples):
+            if count >= max_examples:
+                break
+
+            # Save images to disk
+            saved_images = []
+            images = example.get("images", [])
+            if not isinstance(images, list):
+                images = [images]
+            for img_idx, img in enumerate(images):
+                img_path = images_dir / f"{count:06d}_{img_idx}.png"
+                if hasattr(img, "save"):
+                    img.save(str(img_path))
+                    saved_images.append(str(img_path))
+
+            # Write metadata (without image data) as a JSONL line
+            meta = {k: v for k, v in example.items() if k != "images"}
+            meta["image_paths"] = saved_images
+            meta["example_id"] = count
+            f.write(json.dumps(meta) + "\n")
+
+            count += 1
+
+    print(f"Downloaded: {count} examples")
+    print(f"Images saved to: {images_dir}")
+    print(f"Metadata saved to: {metadata_file}")
+
+    return count
 
 
 def download_cord():
