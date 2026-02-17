@@ -17,6 +17,7 @@ Usage:
 
 import argparse
 import json
+import shutil
 from pathlib import Path
 from datasets import load_dataset
 from dotenv import load_dotenv
@@ -243,13 +244,15 @@ def show_dataset_summary():
             "id": "docvqa",
             "description": "Document Visual QA - general documents",
             "size": "50K questions, 12K images",
+            "disk_gb": 5.0,
             "use_for": "General document understanding"
         },
         {
             "name": "Docmatix",
-            "id": "docmatix", 
-            "description": "Large-scale DocVQA dataset",
-            "size": "2.4M images, 9.5M Q&A pairs",
+            "id": "docmatix",
+            "description": "Large-scale DocVQA dataset (50K subset)",
+            "size": "2.4M images, 9.5M Q&A pairs (downloading 50K subset)",
+            "disk_gb": 15.0,
             "use_for": "Pre-training / large-scale fine-tuning"
         },
         {
@@ -257,6 +260,7 @@ def show_dataset_summary():
             "id": "cord",
             "description": "Receipt parsing dataset",
             "size": "11K+ receipts",
+            "disk_gb": 1.5,
             "use_for": "Invoice/Receipt extraction"
         },
         {
@@ -264,6 +268,7 @@ def show_dataset_summary():
             "id": "cuad",
             "description": "Contract Understanding dataset",
             "size": "510 contracts, 13K labels, 41 clause types",
+            "disk_gb": 0.5,
             "use_for": "Contract analysis"
         },
         {
@@ -271,6 +276,7 @@ def show_dataset_summary():
             "id": "sroie",
             "description": "Scanned Receipts OCR",
             "size": "973 receipts",
+            "disk_gb": 0.3,
             "use_for": "Receipt OCR + extraction"
         },
         {
@@ -278,6 +284,7 @@ def show_dataset_summary():
             "id": "funsd",
             "description": "Form Understanding in Scanned Documents",
             "size": "199 forms",
+            "disk_gb": 0.2,
             "use_for": "Form field extraction"
         },
     ]
@@ -286,13 +293,17 @@ def show_dataset_summary():
         print(f"\n📄 {ds['name']} ({ds['id']})")
         print(f"   {ds['description']}")
         print(f"   Size: {ds['size']}")
+        print(f"   Estimated disk space: ~{ds['disk_gb']} GB")
         print(f"   Use for: {ds['use_for']}")
-    
+
+    total_gb = sum(ds["disk_gb"] for ds in datasets_info)
+    print(f"\nTotal estimated disk space (all datasets): ~{total_gb:.1f} GB")
+
     print("\n" + "-" * 60)
     print("Usage:")
-    print("  python download_datasets.py --all              # Download all")
-    print("  python download_datasets.py --dataset docvqa   # Download specific")
-    print("  python download_datasets.py --dataset cord cuad # Download multiple")
+    print("  python dataset.py --all              # Download all")
+    print("  python dataset.py --dataset docvqa   # Download specific")
+    print("  python dataset.py --dataset cord cuad # Download multiple")
 
 
 def main():
@@ -324,13 +335,34 @@ def main():
         datasets_to_download = list(download_functions.keys())
     else:
         datasets_to_download = args.dataset
-    
+
+    # Estimate disk space needed
+    disk_estimates = {
+        "docvqa": 5.0, "docmatix": 15.0, "cord": 1.5,
+        "cuad": 0.5, "sroie": 0.3, "funsd": 0.2,
+    }
+    total_needed = sum(disk_estimates.get(d, 1.0) for d in datasets_to_download)
+    free_gb = shutil.disk_usage(Path(OUTPUT_DIR).resolve()).free / (1024 ** 3)
+
     print("=" * 60)
     print("DATASET DOWNLOADER")
     print("=" * 60)
     print(f"Downloading: {', '.join(datasets_to_download)}")
     print(f"Output directory: {OUTPUT_DIR}")
-    
+    print(f"\nEstimated disk space needed: ~{total_needed:.1f} GB")
+    for d in datasets_to_download:
+        print(f"  - {d}: ~{disk_estimates.get(d, 1.0):.1f} GB")
+    print(f"Available disk space: {free_gb:.1f} GB")
+
+    if total_needed > free_gb:
+        print(f"\n⚠️  WARNING: Not enough disk space! Need ~{total_needed:.1f} GB but only {free_gb:.1f} GB available.")
+        return
+
+    confirm = input(f"\nProceed with download (~{total_needed:.1f} GB)? [y/N]: ").strip().lower()
+    if confirm != "y":
+        print("Download cancelled.")
+        return
+
     for dataset_name in datasets_to_download:
         try:
             download_functions[dataset_name]()
